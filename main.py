@@ -1,86 +1,137 @@
-# def main():
-    
-## Encryption tool ##
+"""Encryption tool
+using functions:
+Generate and save key
+Encrypt file
+Decrypt and read file
+"""
 from cryptography.fernet import Fernet #import function for encryption
 import argparse #import function used for handle and interpret arguments
 import os #to interact with operating system ie local files
-from docx import Document #för att kunna öppna wordfiler
 
-# 2, Encrypt file with key
-#   when finished, back to menu
-# 3, Decrypt and read a encrypted file
-#   if wish to close and encrypt file, go to no 2 then menu
+# Define functions 
+# Generate and save key
+def generate_key(namepf):
+    key = Fernet.generate_key()
+    #print(f"Generated password: {key.decode()}") #Test to see if key is generated
+    namepf = input("Name your password file: ")
 
-
-# borde jag göra om detta till en klass?
-print("Welcome to the encryption service!") #welcome message followed by main menu with the different options of the programme
-while True: 
-    print("Menu:")
-    print("1. Generate and save a key")
-    print("2. Encrypt file (key needed)")
-    print("3. Decrypt and read a file (key needed)")
-    print("4. Exit")
-
-    navigation = input("Select option (1-4): ")
-    # print(navigation) #Test to see if input works
+    #if the file already exist
+    if os.path.exists(namepf):
+        print(f"The file {namepf} already exists. Please try again.") #kan försöka utv så att det dir blir input
+        return
     
-    if navigation == "1":
-        key = Fernet.generate_key() #kör en metod
-        #print(f"Generated password: {key.decode()}") #Test to see if key is generated
+    #save the key to file
+    with open(namepf, "wb" ) as key_file:
+        key_file.write(key)
+        print(f"Password is saved to file {namepf}.")
 
-        namepf = input("Name your password file: ")
-        if os.path.exists(namepf):
-            namepf = input(f"The file {namepf} already exists. Please choose another name: ") #detta skulle kunna vara en klass
-
-        with open(namepf, "wb" ) as key_file:
-            key_file.write(key)
-            print(f"Password is saved to file {namepf}.")
-
-    if navigation == "2":
-        while True:
-            file2encrypt = input("Select file to encrypt: ")
-            try:
-                with open(file2encrypt, "rb") as file: 
-                    data =file.read()
-                print(f"The file '{file2encrypt}' was opened.")
-                break
-            except FileNotFoundError:
-                print(f"Error: The file '{file2encrypt}' was not found. Please check the file name and path.")
-                try_again = input("To try again write 'yes', to go back to menu write 'no': ").lower()
-                if try_again == "no":
-                    break
-
-                
-            
-# with open("ny_bilg.png", "wb") as new_file:
-#     new_file.write(data)
-        #öppna en befintlig fil
-        #fil finns redan
-        #skapa en ny fil
-
-    # if navigation == "3":
-
-    # if navigation == "4":
-    #     print("You are now closing the programme.")
-    #     break
-
+# Encrypt file, or create and encrypt file
+def encrypt_file(file_name, key_file):
+    key_file = input("Select password file: ")
+    file_name = input("Select file to encrypt: ")
+    if not os.path.exists(key_file):
+        print(f"The key file {key_file} cannot be found.")
+        return #vill gå tillbaka till input istället för att starta om
     
+    with open(key_file, "rb") as kf:
+        key = kf.read()
+        keyobject = Fernet(key)
+        #steps above loads the saved key into the programme
 
+        #function below is checking to see if the file exist
+    if not os.path.exists(file_name):
+        print(f"The file {file_name} cannot be found.")
+        createfile = input(f"Do you want to create a file with the name {file_name}, yes/no? ")
+        if createfile == "yes":
+            with open(file_name, "wb") as file:
+                file.write(b"") #skapar en binär fil som är tom
+            print(f"The file '{file_name}' has been created.")
+        else:
+            return #vill gå tillbaka till input istället för att starta om. är return funktionen nödvändig??
+        
+        #loads the already existing file or recently created file into the programme
+    with open(file_name, "rb") as file:
+        filecontent = file.read()
+        print(f"The file '{file_name}' was opened successfully.")
+        
+        #encrypt the open file using the inserted password
+    encrypted_data = keyobject.encrypt(filecontent)
 
-# ANVÄND OS FUNKTION FÖR ATT ÄNDRA OCH HANTERA FILER
+        #unnecessary function just because its fun, "masks" as mp3 in order for unauthorized ppl not to know its an encrypted file
+    base_name = os.path.splitext(file_name)[0]
+    encrypted_file_name = f"{base_name}.mp3"
 
-# with open("den valda filen", "rb") as file: #såhär öppnar man en fil
-#     data =file.read()
-# with open("ny_bilg.png", "wb") as new_file:
-#     new_file.write(data)
+        #save the encrypted file into new file
+    with open(encrypted_file_name, "wb") as enc_file:
+        enc_file.write(encrypted_data)
+        print(f"Encrypted file saved as '{encrypted_file_name}'.")
 
-# If file doesnt exist
-# Message: files doesnt exist. do you want to create a new file?
-# If yes -> create and save file
-# If no -> do you want to try another file name? 
-#   If yes -> enter file name
-#   If no -> Back to menu
+# Decrypt file
+#function to select file and password to decrypt
+def decrypt_file(file_name, key_file):
+    file_name = input("Select file to decrypt: ")
+    key_file = input("Select password file: ")
 
+    #check if the file exist
+    if not os.path.exists(file_name):
+        print(f"The file {file_name} cannot be found. Try again.")
+        return
+    
+    #read the encrypted file
+    with open(file_name, "rb") as enc_file:
+        encrypted_data = enc_file.read()
+        print(f"The encrypted file '{file_name}' was opened successfully.")
+  
+    #check if the passwordfile exist
+    if not os.path.exists(key_file):
+        print(f"The key file {key_file} cannot be found. Try again.")
+        return
+    
+    #read the key from the keyfile
+    with open(key_file, "rb") as kf:
+        key = kf.read()
+        keyobject = Fernet(key)
 
-# if __name__ == "__main__":
-#     main()
+    #decrypt the data using the inserted keyfile
+    decrypted_data = keyobject.decrypt(encrypted_data)
+
+    #save the enc data back to regular file
+    """
+    ändra: ska krypteras fån txt till mp3, men dekrypteras till text.
+    lägg till funktion för att omvandla"""
+    with open(file_name, "wb") as dec_file:
+        dec_file.write(decrypted_data)
+        print(f"Decrypted file saved as '{file_name}'.")    
+
+# Lägg till funktionalitet för att skapa en lösenordsbaserad nyckel med hjälp av PBKDF2.
+# def protectedkey
+
+# om göra om till klasser, vad skulle det kunna vara??
+
+def main():
+
+    parser = argparse.ArgumentParser(description="Encryption tool") #initiates argparser
+   
+    #bacis arguments needed to navigate and perform operations:
+    parser.add_argument("-o", "--operation", choices=["generate", "encrypt", "decrypt"], required=True, help="Select operation")
+    # Argument för filnamn på nyckelfilen (för generate-operationen)
+    parser.add_argument("-keyf", "--keyfile", help="Name file to save to key/name of keyfile to load")
+        #Vars tar den här filen vägen sen???
+    parser.add_argument("-f", "--file", help="Name of file to encrypt/decrypt")
+        #Vars tar den här filen vägen sen???
+
+    #functions to connect choices with def functions  
+    args = parser.parse_args()
+
+    #generate key and save to file
+    if args.operation == "generate":
+        generate_key(args.keyfile)
+
+    elif args.operation == "encrypt":
+        encrypt_file(args.keyfile, args.file)
+
+    elif args.operation == "decrypt":
+        decrypt_file(args.file, args.keyfile)
+
+if __name__ == "__main__":
+    main()

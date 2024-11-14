@@ -4,7 +4,7 @@ Generate and save key
 Encrypt file
 Decrypt and read file
 """
-from cryptography.fernet import Fernet #import function for encryption
+from cryptography.fernet import Fernet, InvalidToken #import function for encryption
 import argparse #import function used for handle and interpret arguments
 import os #to interact with operating system ie local files
 
@@ -17,21 +17,21 @@ def generate_key(namepf):
 
     #if the file already exist
     if os.path.exists(namepf):
-        print(f"The file {namepf} already exists. Please try again.") #kan försöka utv så att det dir blir input
+        print(f"The file '{namepf}' already exists. Please try again.") #kan försöka utv så att det dir blir input
         return
     
     #save the key to file
     with open(namepf, "wb" ) as key_file:
         key_file.write(key)
-        print(f"Password is saved to file {namepf}.")
+        print(f"Password is saved to file '{namepf}'.")
 
 # Encrypt file, or create and encrypt file
 def encrypt_file(file_name, key_file):
     key_file = input("Select password file: ")
     file_name = input("Select file to encrypt: ")
     if not os.path.exists(key_file):
-        print(f"The key file {key_file} cannot be found.")
-        return #vill gå tillbaka till input istället för att starta om
+        print(f"The key file '{key_file}' cannot be found.")
+        return
     
     with open(key_file, "rb") as kf:
         key = kf.read()
@@ -40,14 +40,15 @@ def encrypt_file(file_name, key_file):
 
         #function below is checking to see if the file exist
     if not os.path.exists(file_name):
-        print(f"The file {file_name} cannot be found.")
-        createfile = input(f"Do you want to create a file with the name {file_name}, yes/no? ")
-        if createfile == "yes":
+        print(f"The file '{file_name}' cannot be found.")
+        createfile = input(f"Do you want to create a file with the name '{file_name}', yes/no? ")
+        if createfile.lower() == "yes":
             with open(file_name, "wb") as file:
                 file.write(b"") #skapar en binär fil som är tom
             print(f"The file '{file_name}' has been created.")
         else:
-            return #vill gå tillbaka till input istället för att starta om. är return funktionen nödvändig??
+            print("No file was created.")
+            return
         
         #loads the already existing file or recently created file into the programme
     with open(file_name, "rb") as file:
@@ -60,11 +61,14 @@ def encrypt_file(file_name, key_file):
         #unnecessary function just because its fun, "masks" as mp3 in order for unauthorized ppl not to know its an encrypted file
     base_name = os.path.splitext(file_name)[0]
     encrypted_file_name = f"{base_name}.mp3"
+## FUTURE DEV. ADD OPTIONAL FUNCTION TO RENAME FILE WHEN ENCRYPTING
 
         #save the encrypted file into new file
     with open(encrypted_file_name, "wb") as enc_file:
         enc_file.write(encrypted_data)
         print(f"Encrypted file saved as '{encrypted_file_name}'.")
+
+## FUTURE DEV. ADD OPTION TO DELETE ORIGINAL FILE WHEN CREATING ENCRYPTED VERSION
 
 # Decrypt file
 #function to select file and password to decrypt
@@ -74,34 +78,45 @@ def decrypt_file(file_name, key_file):
 
     #check if the file exist
     if not os.path.exists(file_name):
-        print(f"The file {file_name} cannot be found. Try again.")
+        print(f"The file '{file_name}' cannot be found. Try again.")
         return
     
-    #read the encrypted file
-    with open(file_name, "rb") as enc_file:
-        encrypted_data = enc_file.read()
-        print(f"The encrypted file '{file_name}' was opened successfully.")
+    try:
+        #read the encrypted file
+        with open(file_name, "rb") as enc_file:
+            encrypted_data = enc_file.read()
+            print(f"The encrypted file '{file_name}' was opened successfully.")
   
-    #check if the passwordfile exist
-    if not os.path.exists(key_file):
-        print(f"The key file {key_file} cannot be found. Try again.")
-        return
+        #check if the passwordfile exist
+        if not os.path.exists(key_file):
+            print(f"The key file '{key_file}' cannot be found. Try again.")
+            return
     
-    #read the key from the keyfile
-    with open(key_file, "rb") as kf:
-        key = kf.read()
-        keyobject = Fernet(key)
+        #read the key from the keyfile
+        with open(key_file, "rb") as kf:
+            key = kf.read()
+            keyobject = Fernet(key)
 
-    #decrypt the data using the inserted keyfile
-    decrypted_data = keyobject.decrypt(encrypted_data)
+        #decrypt the data using the inserted keyfile
+        decrypted_data = keyobject.decrypt(encrypted_data)
 
-    #save the enc data back to regular file
-    """
-    ändra: ska krypteras fån txt till mp3, men dekrypteras till text.
-    lägg till funktion för att omvandla"""
-    with open(file_name, "wb") as dec_file:
-        dec_file.write(decrypted_data)
-        print(f"Decrypted file saved as '{file_name}'.")    
+        #funtion to save the file as original format, not mp3
+        original_file_name = os.path.splitext(file_name)[0]
+
+## FUTURE DEV. ADD OPTIONAL FUNCTION TO RENAME FILE WHEN DECRYPTING
+
+        #save the enc data back to regular file
+        with open(original_file_name, "wb") as dec_file:
+            dec_file.write(decrypted_data)
+            print(f"Decrypted file saved as '{original_file_name}'.")    
+
+## FUTURE DEV. ADD OPTION TO DELETE ORIGINAL FILE WHEN CREATING DECRYPTED VERSION 
+ 
+    # #if errors
+    except InvalidToken:
+         print("The key or the file is incorrect, please try again.")
+    except Exception as e:
+         print(f"An error occurred: {e}")
 
 # Lägg till funktionalitet för att skapa en lösenordsbaserad nyckel med hjälp av PBKDF2.
 # def protectedkey
@@ -109,7 +124,6 @@ def decrypt_file(file_name, key_file):
 # om göra om till klasser, vad skulle det kunna vara??
 
 def main():
-
     parser = argparse.ArgumentParser(description="Encryption tool") #initiates argparser
    
     #bacis arguments needed to navigate and perform operations:

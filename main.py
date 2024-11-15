@@ -3,17 +3,23 @@ using functions:
 Generate and save key
 Encrypt file
 Decrypt and read file
+## FUTURE DEV. ADD OPTION TO CREATE ENCRYPTED DIVICE (OR ENCRYPTED FILE)
 """
 from cryptography.fernet import Fernet, InvalidToken #import function for encryption
 import argparse #import function used for handle and interpret arguments
 import os #to interact with operating system ie local files
 
+## FUTURE DEV. REWRITE USING CLASS
+
 # Define functions 
-# Generate and save key
+## FUTURE DEV. ADD FUNCTION FOR PBKDF2
+## FUTURE DEV. ADD FUNKTION TO WORK WITH WORD FILES
+
+# Generate key and save to file
 def generate_key(namepf):
     key = Fernet.generate_key()
-    #print(f"Generated password: {key.decode()}") #Test to see if key is generated
-    namepf = input("Name your password file: ")
+    #print(f"Generated key: {key.decode()}") #Test to see if key is generated
+    namepf = input("Name your keyfile: ")
 
     #if the file already exist
     if os.path.exists(namepf):
@@ -23,14 +29,14 @@ def generate_key(namepf):
     #save the key to file
     with open(namepf, "wb" ) as key_file:
         key_file.write(key)
-        print(f"Password is saved to file '{namepf}'.")
+        print(f"Key is saved to file '{namepf}'.")
 
 # Encrypt file, or create and encrypt file
 def encrypt_file(file_name, key_file):
-    key_file = input("Select password file: ")
+    key_file = input("Select keyfile: ")
     file_name = input("Select file to encrypt: ")
     if not os.path.exists(key_file):
-        print(f"The key file '{key_file}' cannot be found.")
+        print(f"The keyfile '{key_file}' cannot be found.")
         return
     
     with open(key_file, "rb") as kf:
@@ -58,9 +64,10 @@ def encrypt_file(file_name, key_file):
         #encrypt the open file using the inserted password
     encrypted_data = keyobject.encrypt(filecontent)
 
-        #unnecessary function just because its fun, "masks" as mp3 in order for unauthorized ppl not to know its an encrypted file
+        #unnecessary function just because its fun, masks as mp3 in order for unauthorized ppl not to know its an encrypted file
     base_name = os.path.splitext(file_name)[0]
     encrypted_file_name = f"{base_name}.mp3"
+
 ## FUTURE DEV. ADD OPTIONAL FUNCTION TO RENAME FILE WHEN ENCRYPTING
 
         #save the encrypted file into new file
@@ -74,7 +81,7 @@ def encrypt_file(file_name, key_file):
 #function to select file and password to decrypt
 def decrypt_file(file_name, key_file):
     file_name = input("Select file to decrypt: ")
-    key_file = input("Select password file: ")
+    key_file = input("Select keyfile: ")
 
     #check if the file exist
     if not os.path.exists(file_name):
@@ -85,11 +92,10 @@ def decrypt_file(file_name, key_file):
         #read the encrypted file
         with open(file_name, "rb") as enc_file:
             encrypted_data = enc_file.read()
-            print(f"The encrypted file '{file_name}' was opened successfully.")
   
         #check if the passwordfile exist
         if not os.path.exists(key_file):
-            print(f"The key file '{key_file}' cannot be found. Try again.")
+            print(f"The keyfile '{key_file}' cannot be found. Try again.")
             return
     
         #read the key from the keyfile
@@ -102,6 +108,9 @@ def decrypt_file(file_name, key_file):
 
         #funtion to save the file as original format, not mp3
         original_file_name = os.path.splitext(file_name)[0]
+        
+        #message if successfully decrypted
+        print(f"The file '{file_name}' was decrypted successfully.")
 
 ## FUTURE DEV. ADD OPTIONAL FUNCTION TO RENAME FILE WHEN DECRYPTING
 
@@ -118,32 +127,30 @@ def decrypt_file(file_name, key_file):
     except Exception as e:
          print(f"An error occurred: {e}")
 
-# Lägg till funktionalitet för att skapa en lösenordsbaserad nyckel med hjälp av PBKDF2.
-# def protectedkey
-
-# om göra om till klasser, vad skulle det kunna vara??
 
 def main():
-    parser = argparse.ArgumentParser(description="Encryption tool") #initiates argparser
+
+    parser = argparse.ArgumentParser(description="Encryption tool used to generate keyfile, encrypt or decrypte file.") #initiates argparser
    
     #bacis arguments needed to navigate and perform operations:
     parser.add_argument("-o", "--operation", choices=["generate", "encrypt", "decrypt"], required=True, help="Select operation")
-    # Argument för filnamn på nyckelfilen (för generate-operationen)
-    parser.add_argument("-keyf", "--keyfile", help="Name file to save to key/name of keyfile to load")
-        #Vars tar den här filen vägen sen???
-    parser.add_argument("-f", "--file", help="Name of file to encrypt/decrypt")
-        #Vars tar den här filen vägen sen???
 
-    #functions to connect choices with def functions  
+    #arguments to access password key or file
+    parser.add_argument("-keyf", "--keyfile", help="Create a keyfile or open a existing keyfile by inserting filename.")
+    parser.add_argument("-f", "--file", help="Select a file to encrypt or decrypt, or create a new file, by inserting filename.")
+
+    #function to connect choices with def functions  
     args = parser.parse_args()
 
     #generate key and save to file
     if args.operation == "generate":
         generate_key(args.keyfile)
-
+    
+    #encrypt file (or create file to encrypt)
     elif args.operation == "encrypt":
         encrypt_file(args.keyfile, args.file)
 
+    #decrypt file
     elif args.operation == "decrypt":
         decrypt_file(args.file, args.keyfile)
 
